@@ -133,9 +133,9 @@ vlan 10
 vlan 50
    name IPCameraVLAN
 vlan 69
-   name vlanNIrobert
+   name vlanNETFLIX
 vlan 70
-    name EXTRAVLAN
+    name GIPITPERA
 vlan 71
     name HRD-POLICY
 vlan 100
@@ -172,10 +172,10 @@ config t
 ip routing
 ip dhcp pool CAMERA6
 host 10.81.50.6 255.255.255.0
-client-identifier 001a.xxxx.yyyy
+client-identifier 001a.070a.bf71
 ip dhcp pool CAMERA8
 host 10.81.50.8 255.255.255.0
-client-identifier 001a.xxxx.yyyy 
+client-identifier 001a.070b.4722 
 end
 show ip dhcp binding
 
@@ -246,18 +246,18 @@ ephone-dn 7
 ephone-dn 8
   number 8188
  ephone-dn 9
-   number 8199
+   number 8167
 ephone-dn 10
- number 8198
+ number 8123
 Ephone 1
-  Mac-address cafe.face.baba
+  Mac-address ccd8.c1fb.1519
   type 8945
-  button 1:8 2:7 3:6 4:5
+  button 1:8 2:7 3:6 4:9
   restart
 Ephone 2
-  Mac-address fafa.caca.baba
+  Mac-address dca5.f43f.3b7f
   type 8945
-  button 1:4 2:3 3:2 4:1
+  button 1:4 2:3 3:2 4:10
   restart  
 end
 
