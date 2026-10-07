@@ -1,0 +1,539 @@
+conf t 
+hostname CoreTAAS-81
+ip routing
+int fa0/9
+no sw
+ip add 10.100.69.122 255.255.255.252
+end
+
+conf t 
+hostname CoreBABA-81
+ip routing
+int fa0/9
+no sw
+ip add 10.100.69.118 255.255.255.252
+end
+
+
+
+============
+recipe for static routes
+
+configure a static host for 10.1.1.5 on R1
+
+
+conf t
+ip route [destination] [mask] [next-hop / exit int]
+------------
+@R1
+conf t
+ip route 10.1.1.5 255.255.255.255 10.1.1.2
+end
+
+ping 10.1.1.6
+
+conf t
+ip route 10.1.1.6 255.255.255.255 10.1.1.2
+end
+
+ping 10.1.1.6
+
+
+@R3
+conf t
+ip route 10.1.1.1 255.255.255.255 10.1.1.5
+end
+
+
+-------R1 and R4
+@R1
+conf t
+ip route 10.1.1.8 255.255.255.252 10.1.1.2
+end
+
+ping 10.1.1.10
+
+
+@R4
+conf t
+ip route 10.1.1.0 255.255.255.252 10.1.1.9
+end
+
+ping 10.1.1.1
+
+
+@R2
+conf t
+ip route 10.1.1.8 255.255.255.252 10.1.1.9
+end
+
+ping 10.1.1.10
+
+
+-----------
+C1
+
+conf t
+ ip dhcp excluded-address 10.2.1.1 10.2.1.100
+ ip dhcp excluded-address 10.2.1.199 10.2.1.254
+ ip dhcp pool MGMTPOOL.COM
+  network 10.2.1.0 255.255.255.0
+  default-router 10.2.1.254
+  domain-name MGMTPOOL.COM
+  dns-server 10.2.1.133
+  end
+
+C2
+
+conf t
+ ip dhcp excluded-address 10.2.1.1 10.2.1.200
+ ip dhcp pool MGMTPOOL.COM
+  network 10.2.1.0 255.255.255.0
+  default-router 10.2.1.254
+  domain-name MGMTPOOL.COM
+  dns-server 10.2.1.133
+  end
+
+
+A1
+conf t
+ int e0/0
+  switchport mode access
+  switchport access vlan 10
+  end
+
+
+A2
+conf t
+ int e1/0
+  switchport mode access
+  switchport access vlan 10
+  end
+
+
+P1
+conf t
+ int e0/0
+  no shut
+  ip add dhcp
+  end
+
+P2
+conf t
+ int e1/0
+  no shut
+  ip add dhcp
+  end
+
+
+
+
+=============CONFIGURE EIGRP
+step 1 FIND CONNECTED NETWORKS
+
+D1
+-10.2.1.0/24
+-10.2.2.0/24
+-192.168.1.128/27
+-10.1.4.4/30
+
+@C1 / D1
+conf t 
+router eigrp 100
+network 10.2.1.0 0.0.0.255
+network 10.2.2.0 0.0.0.255
+network 192.168.1.128 0.0.0.31
+network 10.1.4.4 0.0.0.3
+end
+
+show ip eigrp neigh
+
+@C2
+conf t 
+router eigrp 100
+network 10.2.1.0 0.0.0.255
+network 10.2.2.0 0.0.0.255
+network 192.168.1.128 0.0.0.31
+network 10.1.4.8 0.0.0.3
+end
+
+show ip eigrp neigh
+sh ip route eigrp
+
+
+
+end
+
+@R4
+conf t 
+router eigrp 100
+network 10.1.4.4 0.0.0.3
+network 10.1.4.8 0.0.0.3
+
+end
+
+conf t 
+router eigrp 100
+no network 10.1.1.4 0.0.0.3
+no network 10.1.1.8 0.0.0.3
+
+end
+
+
+
+--------------
+configure ospf
+
+!@R3
+conf t
+router ospf 1
+router-id 3.3.3.3
+network 3.3.3.3 0.0.0.0 area 0
+network 10.1.1.4 0.0.0.3 area 0
+network 10.1.1.8 0.0.0.3 area 34
+end
+
+
+!@R4
+conf t
+router ospf 1
+router-id 4.4.4.4
+network 4.4.4.4 0.0.0.0 area 0
+
+network 10.1.1.8 0.0.0.3 area 34
+end
+
+show ip ospf neigh
+
+!@R4
+conf t
+ int lo4
+  no shut
+  end
+
+!@R2
+conf t
+ router ospf 1
+  router-id 2.2.2.2
+  network 2.2.2.2 0.0.0.0 area 0
+  network 10.1.1.0 0.0.0.3 area 12
+  network 10.1.1.4 0.0.0.3 area 0
+  end
+
+!@R1
+conf t
+ router ospf 1
+  router-id 1.1.1.1
+  exit
+ int lo1
+  ip ospf 1 area 12
+  exit
+ int e1/0
+  ip ospf 1 area 12
+  end
+
+!@R4
+conf t
+ int e3/3
+  no shut
+  ip add 208.8.8.100 255.255.255.0
+  ip ospf 1 area 0
+  exit
+ router eigrp 100
+  network 208.8.8.0 0.0.0.255
+  end
+
+
+wireshark
+ospf || eigrp
+
+
+
+--------
+ospf router
+-router-id
+-auth
+-subnet mask
+-area
+
+-hello timer : 10
+-dead timer : 40
+
+
+
+
+
+
+R3
+conf t
+int e1/2
+ip ospf hello-interval 20
+end
+
+
+R3
+
+R4 R3
+show ip ospf int e1/2
+
+
+R3
+conf t
+int e1/2
+ip ospf hello-interval 10
+end
+
+
+
+D
+I
+T
+E
+E
+L
+F
+
+
+
+
+!@R4
+conf t
+ int e1/2
+  ip ospf network point-to-point
+  end
+
+
+!@R3
+conf t
+ int e1/2
+  ip ospf network point-to-point
+  end
+
+
+!@R2
+conf t
+ int e1/2
+  ip ospf priority 255
+  end
+
+
+!@R1
+conf t
+ int e1/0
+  ip ospf priority 0
+  end
+
+
+sh ip ospf | inc band
+
+!@R4
+config T
+ router eigrp 100
+  redistribute ospf 1 metric 10000 100 255 1 1500
+  exit
+ router ospf 1
+  redistribute eigrp 100 subnets
+end
+
+============
+!@R1
+conf t
+ router bgp 1
+  bgp log-neighbor-changes
+   neighbor 208.8.8.4 remote-as 45
+   neighbor 207.7.7.2 remote-as 2
+   neighbor 209.9.9.3 remote-as 3
+   address-family ipv4
+	neighbor 208.8.8.4 activate
+    neighbor 207.7.7.2 activate
+    neighbor 209.9.9.3 activate
+    network 207.7.7.0 mask 255.255.255.0
+    network 208.8.8.0 mask 255.255.255.0
+    network 209.9.9.0 mask 255.255.255.0
+    end
+
+!@I1 - CONVERGE
+conf t
+ router bgp 45
+  bgp log-neighbor-changes
+  neighbor 24.2.4.2 remote-as 2
+  neighbor 45.4.5.5 remote-as 45
+  neighbor 208.8.8.1 remote-as 1
+  address-family ipv4
+   neighbor 24.2.4.2 activate
+   neighbor 45.4.5.5 activate
+   neighbor 208.8.8.1 activate
+   network 208.8.8.0 mask 255.255.255.0
+   network 24.2.4.0 mask 255.255.255.0
+   network 44.44.44.44 mask 255.255.255.255
+   network 45.4.5.0 mask 255.255.255.0
+   end
+
+
+!@I3 - GLOBE
+conf t
+ router bgp __
+  bgp log-neighbor-changes
+  ______  __.__.__.__ remote-as __
+  ______  __.__.__.__ remote-as __
+  ______  __.__.__.__ remote-as __
+  address-family __
+   ______  __.__.__.__ activate
+   ______  __.__.__.__ activate
+   ______  __.__.__.__ activate
+   ______  __.__.__.__ mask __.__.__.__
+   ______  __.__.__.__ mask __.__.__.__
+   ______  __.__.__.__ mask __.__.__.__
+   ______  __.__.__.__ mask __.__.__.__
+   end
+
+
+!@I3 - GLOBE
+conf t
+ router bgp 45
+  bgp log-neighbor-changes
+  neighbor 35.3.5.5 remote-as 45
+  neighbor 32.3.2.20remote-as 2
+  neighbor 209.9.9.1 remote-as 1
+  address-family ipv4
+   neighbor 24.2.4.2 activate
+   neighbor 45.4.5.5 activate
+   neighbor 208.8.8.1 activate
+   network 208.8.8.0 mask 255.255.255.0
+   network 24.2.4.0 mask 255.255.255.0
+   network 44.44.44.44 mask 255.255.255.255
+   network 45.4.5.0 mask 255.255.255.0
+   end
+
+correct
+
+!@I3 - GLOBE
+conf t
+ router bgp 3
+  bgp log-neighbor-changes
+  neighbor 32.3.2.2 remote-as 2
+  neighbor 35.3.5.5 remote-as 45
+  neighbor 209.9.9.1 remote-as 1
+  address-family ipv4
+   neighbor 32.3.2.2 activate
+   neighbor 35.3.5.5 activate
+   neighbor 209.9.9.1 activate
+   network 209.9.9.0 mask 255.255.255.0
+   network 32.3.2.0 mask 255.255.255.0
+   network 33.33.33.33 mask 255.255.255.255
+   network 35.3.5.0 mask 255.255.255.0
+   end
+
+
+!@I4 - GOOGLE
+config t
+ router bgp 45
+  bgp log-neighbor-changes
+  neighbor 25.2.5.2 remote-as 2
+  neighbor 35.3.5.3 remote-as 3
+  neighbor 45.4.5.4 remote-as 45
+  address-family ipv4
+   neighbor 25.2.5.2 activate
+   neighbor 35.3.5.3 activate
+   neighbor 45.4.5.4 activate
+   network 8.8.8.8 mask 255.255.255.255
+   network 55.55.55.55 mask 255.255.255.255
+   network 25.2.5.0 mask 255.255.255.0
+   network 35.3.5.0 mask 255.255.255.0
+   network 45.4.5.0 mask 255.255.255.0
+   end
+
+
+
+
+!@I2 - PLDT
+config t
+ router bgp 2
+ bgp log-neighbor-changes
+ neighbor 24.2.4.4 remote-as 45
+ neighbor 25.2.5.5 remote-as 45
+ neighbor 32.3.2.3 remote-as 3
+ neighbor 207.7.7.1 remote-as 1
+ address-family ipv4
+  neighbor 24.2.4.4 activate
+  neighbor 25.2.5.5 activate
+  neighbor 32.3.2.3 activate
+  neighbor 207.7.7.1 activate
+  network 207.7.7.0 mask 255.255.255.0
+  network 22.22.22.22 mask 255.255.255.255
+  network 24.2.4.0 mask 255.255.255.0
+  network 25.2.5.0 mask 255.255.255.0
+  network 32.3.2.0 mask 255.255.255.0
+  end
+
+
+
+!@R1
+conf t
+ router ospf 1
+  default-information originate always
+  end
+
+!@R1
+conf t
+ int range e1/1-3
+  ip nat outside
+  exit
+ int e1/0
+  ip nat inside
+  end
+
+
+!@R1
+conf t
+ access-list 1 permit 10.0.0.0 0.255.255.255
+ access-list 1 permit 172.16.0.0 0.15.255.255
+ access-list 1 permit 192.168.0.0 0.0.255.255
+ end
+
+
+
+conf t
+ ip nat inside source static 10.1.1.2 208.8.8.10 
+ ip nat inside source static 10.1.1.6 208.8.8.20
+ ip nat inside source static 10.1.1.10 208.8.8.30
+ end
+show ip nat translations
+
+
+!@R1
+conf t
+ ip nat inside source list 1 int e1/2 overload
+ end
+
+
+
+conf t
+
+ip route 0.0.0.0 0.0.0.0 10.2.1.1
+  end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
