@@ -1,0 +1,295 @@
+
+
+Area 2
+ospf process 5
+loopback 0 as router id
+r2 r3 point topoint
+r1 lowest prio on e0/0 and e0/1
+advertise all connected routes
+
+!R1
+conf t 
+int e0/1
+no shut
+172.16.160.1 255.255.255.254
+end
+
+
+
+!R3
+conf t 
+int e0/1
+no shut
+172.16.160.254 255.255.255.224
+end
+
+
+r2
+conf t
+router ospf 5
+router-id 10.46.187.22
+exit
+ int lo0
+  ip ospf 5 area 2
+  exit
+ int e1/0
+  ip ospf 5 area 2
+  end
+end
+
+
+
+
+
+conf t
+int e0/0
+
+conf t
+ router ospf 5
+  router-id 10.46.187.22
+  network 192.168.0.154 0.0.0.0 area 0
+  network 10.1.1.0 0.0.0.3 area 12
+  network 10.1.1.4 0.0.0.3 area 0
+  end
+
+
+@R2
+conf t
+ip route 172.16.97.111 255.255.255.252 10.1.1.2
+end
+
+ping 10.1.1.10
+
+
+@R3
+conf t
+ip route 10.1.1.0 255.255.255.252 10.1.1.9
+end
+
+ping 10.1.1.1
+
+
+
+
+
+=====================
+
+
+
+  ccd8.c1fb.1519    DYNAMIC     Fa0/5
+  dca5.f43f.3b7f    DYNAMIC     Fa0/7
+
+
+===============
+
+!@CoreBABA
+conf t
+monitor session 1 source int fa0/3,fa0/5,fa0/7
+monitor session 1 dest int fa0/1
+end
+
+
+==============
+FW 
+!@UTM-PH
+
+
+conf t
+ip domain lookup
+ip name-server 8.8.8.8
+end
+
+
+youporn.com 66.254.114.79 
+pornhub.com 66.254.114.41
+vivamax.com 64.98.135.95
+redtube.com 66.254.114.238
+faketaxi 66.254.114.234
+xhamster 104.16.3.81
+sulasok 185.53.179.136  104.21.34.102
+bangbus 66.254.114.234
+
+
+
+!@UTM-PH
+conf t
+ip access-list standard FWP1
+deny 66.254.114.0 0.0.0.255
+deny 104.16.4.81
+deny 66.254.114.41 
+deny 185.53.179.136
+deny 66.254.114.79
+
+permit any
+
+int gig 1
+no ip access-group FWP1 in
+
+end
+
+
+==========
+
+!@UTM-PH
+config t
+ int g1
+  ip add 208.8.8.100 255.255.255.0 secondary
+  no shut
+  exit
+ ip host www.bet100.com 208.8.8.100
+ ip access-list extended NAT 
+  25 deny ip 208.8.8.0 0.0.0.255 208.8.8.0 0.0.0.255
+  exit
+ service finger
+ service tcp-small-servers
+ service udp-small-servers
+ ip dns server
+ ip http server
+ ip http secure-server
+ telephony-service
+  no auto-reg-ephone
+  max-ephones 5
+  max-dn 20
+  ip source-address 208.8.8.11 port 2000
+  exit
+ voice service voip
+  allow-connections h323 to sip
+          
+  allow-connections sip to h323
+  allow-connections sip to sip
+  supplementary-service h450.12
+ sip
+   bind control source-interface g1
+   bind media source-interface g1
+   registrar server expires max 600 min 60
+ voice register global
+  mode cme
+  source-address 208.8.8.11 port 5060
+  max-dn 12
+  max-pool 12
+  authenticate register
+  create profile sync syncinfo.xml
+  end
+
+
+
+
+EXTENDED ACL
+
+!@UTM-PH
+conf t
+ no ip access-list extended FWP4
+ ip access-list extended FWP4
+ permit tcp Any host www.bet100.com eq 80 log
+ permit tcp Any host www.bet100.com eq 443 log
+ permit icmp Any host www.bet100.com log
+ permit tcp Any host www.bet100.com eq 22 log
+ permit tcp Any host www.bet100.com eq 53 log
+
+
+conf t
+ Int gi 1
+  no ip access-group FWP4 in
+  end
+
+
+
+### Remember Ports
+Create an access-list named FWP6 to open the following ports:  
+www.bet100.com open only sccp, sip, imap, smtp, pop3, ftp, tftp, ntp 
+
+
+!@UTM-PH
+conf t
+ no ip access-list extended FWP5
+ ip access-list extended FWP5
+ permit tcp Any host www.bet100.com eq 2000 log
+ permit tcp Any host www.bet100.com eq 5060 log
+ permit tcp Any host www.bet100.com eq 143 log
+ permit tcp Any host www.bet100.com eq 25 log
+ permit tcp Any host www.bet100.com eq 110 log
+ permit tcp Any host www.bet100.com eq 21 log
+ permit udp Any host www.bet100.com eq 69 log 
+ permit udp Any host www.bet100.com eq 123 log
+
+conf t
+ Int gi 1
+  no ip access-group FWP5 in
+  end
+
+==============
+UTM
+conf t 
+int g1
+ip nat outside
+int g3
+access-list 1 permit any
+ip nat inside
+access-list 1 permit any
+ip nat inside source list 1 int g1 overload
+end
+
+
+
+conf t
+access-list 1 permit any
+end
+
+conf t
+ip nat inside source list 1 int g1 overload
+end
+
+
+====
+
+
+WEB1
+sudo su
+hostname WEB1
+ifconfig eth0 10.11.11.101 netmask 255.255.255.224 up
+route add default gw 10.11.11.113
+ping 10.11.11.113
+
+
+
+WEB2
+sudo su
+hostname WEB2
+ifconfig eth0 10.11.11.102 netmask 255.255.255.224 up
+route add default gw 10.11.11.113
+ping 10.11.11.113
+
+
+
+
+utm-ph
+conf t
+ip nat inside source static tcp 10.11.11.101 80 208.8.8.200 8080
+ip nat inside source static tcp 10.11.11.101 443 208.8.8.200 8443
+
+ip nat inside source static tcp 10.11.11.101 443 208.8.8.200 443
+ip nat inside source static tcp 10.11.11.101 80 208.8.8.200 80
+
+end
+sh ip nat translations
+
+
+
+10.11.11.101 22 => 208.8.8.105 0
+10.11.11.102 22 
+
+
+
+
+conf t
+ip nat inside source static tcp 10.11.11.101 22 208.8.8.105 5432
+ip nat inside source static tcp 10.11.11.101 22 208.8.8.105 1234
+
+ip nat inside source static tcp 10.11.11.101 443 208.8.8.200 443
+ip nat inside source static tcp 10.11.11.101 80 208.8.8.200 80
+
+end
+sh ip nat translations
+
+
+
