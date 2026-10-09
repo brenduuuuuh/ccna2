@@ -1,0 +1,394 @@
+======== Gawa PuKey
+
+!@UTM-PH,UTM-JP
+conf t
+!hostname UTM-PH
+ip domain name ccna.sec
+crypto key gen rsa modulus 2048 label pukey exportable
+ip ssh ver 2
+!
+line vty 0 21
+transport input all
+login local
+end
+
+conf t
+crypto key export rsa pukey pem terminal aes C1sc0123
+
+
+===============
+PABAGSAKIN L2
+!@CoreTAAS BABA
+conf t
+no spanning-tree vlan 1-1000
+end
+
+PARA DI MASESANTE
+
+conf t
+spanning-tree vlan 1-1000
+end
+
+============
+conf t 
+default int range fa0/10-12
+end
+
+
+======
+access vs truck links
+
+!@CoreTAAS & CoreBABA
+conf t
+ default int fa0/10-12
+ int range fa0/10-12
+  switchport trunk encapsulation dot1q
+  switchport mode trunk
+  switchport trunk allowed vlan all
+  switchport trunk native vlan 1
+  no shut
+  end
+show int trunk
+
+
+----------
+task 1 configure trunking on all switches
+
+!@C1/D1
+conf t 
+int range e0/0-3, e1/2-3
+switchport trunk encaps dot1q
+switchport mode trunk
+switchport truck allowed vlan all
+switchport trunk native vlan 1
+end
+show int trunk
+
+
+!@A1
+conf t 
+int range e0/1-3, e1/0
+switchport trunk encaps dot1q
+switchport mode trunk
+switchport truck allowed vlan all
+switchport trunk native vlan 1
+end
+show int trunk
+
+
+!@A2
+conf t 
+int range e0/0-3
+switchport trunk encaps dot1q
+switchport mode trunk
+switchport truck allowed vlan all
+switchport trunk native vlan 1
+end
+show int trunk
+
+!@C1
+conf t 
+int range e0/0-3, e1/2-3
+switchport trunk encaps dot1q
+switchport mode trunk
+switchport truck allowed vlan all
+switchport trunk native vlan 1
+end
+show int trunk
+
+
+!@C2
+conf t 
+int range e0/0-3, e1/2-3
+switchport trunk encaps dot1q
+switchport mode trunk
+switchport truck allowed vlan all
+switchport trunk native vlan 1
+end
+show int trunk
+
+
+
+!@CoreTAAS & C2
+conf t
+ spanning-tree mode pvst
+ spanning-tree vlan 1-999 root primary
+ end
+show spanning-tree vlan 
+
+!@CoreBABA & C1
+conf t
+ spanning-tree mode pvst
+ spanning-tree vlan 1-999 root secondary
+ end
+show spanning-tree vlan 1
+
+
+========
+
+!@C1
+conf t 
+int e3/3
+no shut
+end
+
+
+
+====WONDERWOMAN 80
+!@CoreTAAS
+
+conf t 
+int range fa0/3, fa0/7
+shut
+no shut
+end
+
+
+=====SUPERMAN 801.1s
+pre req
+-trunking
+-vtp
+
+
+!@CoreTAAS,C1,C2
+conf t
+ vtp domain ccna
+ vtp mode server
+ vtp version 1
+ end
+
+!@CoreBABA,A1,A2
+conf t
+ vtp domain ccna
+ vtp version 1
+ vtp mode client
+ end
+
+!@CoreTAAS
+conf t
+vlan 269
+name VTPVLAN
+end
+
+!@CoreTAAS,C1
+conf t
+ vlan 1-40
+  exit
+ vlan 41-70
+  exit
+ vlan 71-100
+ end
+
+!@CoreBABA
+conf t
+ int range fa0/2,fa0/4
+  switchport mode access
+  switchport access vlan 10
+ int range fa0/6,fa0/8
+  switchport mode access
+  switchport access vlan 50
+ int fa0/3
+  switchport mode access
+  switchport access vlan 100
+ int range fa0/5,fa0/7
+  switchport voice vlan 100
+  end
+
+
+_Step 3__: Enable 802.1S
+~~~
+!@CoreTAAS,CoreBABA,C1,C2,A1,A2
+conf t
+ spanning-tree mode mst
+ spanning-tree mst configuration
+  name superman-stp
+  revision 1
+   instance 1 vlan 1-40
+   instance 2 vlan 41-70
+   instance 3 vlan 71-100
+   end
+show spanning-tree mst configuration
+
+
+
+
+
+!@CoreTAAS,C1
+config t
+ spanning-tree mst 0 root primary
+ spanning-tree mst 1 root secondary
+ spanning-tree mst 2 root primary
+ spanning-tree mst 3 root secondary
+end
+
+!@CoreBABA,C2
+config t
+ spanning-tree mst 0 root Secondary
+ spanning-tree mst 1 root primary
+ spanning-tree mst 2 root Secondary
+ spanning-tree mst 3 root primary
+end
+
+
+
+
+!@KALI
+
+sudo su
+ifocnfig eth0 10.81.1.69 netmask 255.255.255.0 up
+ip route add default gw 10.81.1.4
+
+
+
+
+IBALIKKKK
+!@CoreTAAS
+
+conf t
+ vlan 1-40
+  exit
+ vlan 41-70
+  exit
+ vlan 71-100
+ en
+
+COREBABA
+conf t
+ int range fa0/2,fa0/4
+  switchport mode access
+  switchport access vlan 10
+ int range fa0/6,fa0/8
+  switchport mode access
+  switchport access vlan 50
+ int fa0/3
+  switchport mode access
+  switchport access vlan 100
+ int range fa0/5,fa0/7
+  switchport voice vlan 100
+  end
+
+sh span lan 41
+
+PORT AGGREGATION
+!@CoreTAAS Core BABA
+conf t
+ int range fa0/10-12
+  channel-group 1 mode active
+  channel-protocol lacp
+  end
+show int po1 | inc BW
+
+
+
+
+C1-C2 12
+A1-C1 11
+A1-C2 10
+A2-C2 22
+A2-C1 20
+
+
+12
+conf t
+ int range e1/2-3
+  channel-group 12 mode active
+  channel-protocol lacp
+  end
+show int po1 | inc BW
+
+
+11
+conf t
+ int range e0/1-2
+  channel-group 11 mode active
+  channel-protocol lacp
+  end
+show int po1 | inc BW
+
+
+
+10
+conf t
+ int range e0/2-3
+  channel-group 11 mode active
+  channel-protocol lacp
+  end
+show int po1 | inc BW
+
+
+22
+conf t
+ int range e0/1-2
+  channel-group 11 mode active
+  channel-protocol lacp
+  end
+show int po1 | inc BW
+
+
+===PORT SECURITY
+## Port Security
+~~~
+!@CoreBABA
+conf t
+ int fa0/6
+  switchport mode access
+  switchport port-security
+  switchport port-security mac-address sticky
+  switchport port-security maximum 1
+  switchport port-security violation shutdown
+  exit
+ int fa0/8
+  switchport mode access
+  switchport port-security
+  switchport port-security mac-address sticky
+  switchport port-security maximum 1
+  switchport port-security violation shutdown
+  end
+sh port-security address
+sh int status err-disable
+
+
+
+!@CoreBABA
+config t
+ int fa0/6
+  no switchport port-security
+  shut
+  no shut
+ int fa0/8
+  no switchport port-security
+  shut
+  no shut
+  end
+============================
+
+### HSRP
+~~~
+!@C1
+conf t
+ hostname C1-PLDT
+ !
+ track 1 int vlan 10 line-protocol
+ !
+ int vlan 10
+  standby 1 ip 10.2.1.69
+  standby 1 preempt
+  standby 1 Priority 150
+  standby 1 Track 1 decrement 60
+  end
+
+
+!@C2
+conf t
+ hostname C2-CONVERGE
+ !
+ int vlan 10
+  standby 1 ip 10.2.1.69
+  standby 1 preempt
+  standby 1 Priority 100
+  end
+
+
+
+
+
